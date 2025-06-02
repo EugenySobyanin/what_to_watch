@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %} Добавить мнение о фильме {% endblock %}
+{% block content %}
+<main>
+  <section class="container my-5">
+    <div class="row">
+      <h1>Добавить мнение о фильме</h1>
+      <div class="col-12 col-lg-7 my-5">
+        <form method="POST" novalidate>
+          <!-- Подключение к форме CSRF-токена -->
+          {{ form.csrf_token }}
+          <!-- Указываем CSS-классы и placeholder -->
+          {{ form.title(class="form-control form-control-lg py-3 mb-3", placeholder=form.title.label.text) }}<br />
+          {% if form.title.errors %}
+            <p class="text-danger">
+              {% for error in form.title.errors %}
+                {{ error }}
+              {% endfor %}
+            </p>
+          {% endif %}
+          {{ form.source(class="form-control form-control-lg py-3 mb-3", placeholder=form.source.label.text) }}<br />
+          <!-- Указываем CSS-классы, placeholder, rows и cols -->
+          {{ form.text(class="form-control form-control-lg py-3 mb-3", placeholder=form.text.label.text,rows="3", cols="40") }}<br />
+          <!-- Указываем CSS-классы для кнопки -->
+          {% if form.text.errors %}
+            <p class="text-danger">
+              {% for error in form.text.errors %}
+                {{ error }}
+              {% endfor %}
+            </p>
+          {% endif %}
+          {{ form.submit(class="button px-5 py-3 btn") }}
+        <form>
+      </div>
+      <div class="col-12 col-lg-5">
+        <img
+          class="img-fluid mx-auto d-block"
+          src="{{ url_for('static', filename='img/illustration.png') }}"
+          alt=""
+        />
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}
