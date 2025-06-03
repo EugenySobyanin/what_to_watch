@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from random import randrange
 
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, abort, flash, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, URLField
@@ -51,7 +51,7 @@ class OpinionForm(FlaskForm):
 def index_view():
     quantity = Opinion.query.count()
     if not quantity:
-        return 'В баззе данных мнений о фильме нет.'
+        abort(500)
     # Случайное число от нуля до quantity
     offset_value = randrange(quantity)
     opinion = Opinion.query.offset(offset_value).first()
@@ -68,6 +68,13 @@ def opinion_view(id):
 def add_opinion_view():
     form = OpinionForm()
     if form.validate_on_submit():
+        text = form.text.data
+        # Если в БД уже есть мнение с текстом, который ввёл пользователь...
+        if Opinion.query.filter_by(text=text).first() is not None:
+            # ...вызвать функцию flash и передать соответствующее сообщение:
+            flash('Такое мнение уже было оставлено ранее"!')
+            # Вернуть пользователя на страницу «Добавить новое мнение»:
+            return render_template('add_opinion.html', form=form)
         opinion = Opinion(
             title=form.title.data,
             text=form.text.data,
@@ -78,6 +85,20 @@ def add_opinion_view():
         return redirect(url_for('opinion_view', id=opinion.id))
     # Если валидация не пройдена — просто отрисовать страницу с формой:
     return render_template('add_opinion.html', form=form)
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    # Ошибка 500 возникает в нештатных ситуациях на сервере. 
+    # Например, провалилась валидация данных.
+    # В таких случаях можно откатить изменения, не зафиксированные в БД,
+    # чтобы в базу не записалось ничего лишнего.
+    db.session.rollback()
+    return render_template('500.html'), 500
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
 
 
 if __name__ == '__main__':
