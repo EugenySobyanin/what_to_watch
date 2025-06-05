@@ -1,8 +1,9 @@
+import csv
 import os
-
 from datetime import datetime
 from random import randrange
 
+import click
 from flask import Flask, abort, flash, render_template, redirect, url_for
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -15,7 +16,9 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
 db = SQLAlchemy(app)
+
 migrate = Migrate(app, db)
 
 
@@ -103,6 +106,24 @@ def internal_error(error):
 def page_not_found(error):
     return render_template('404.html'), 404
 
+@app.cli.command('load_opinions')
+def load_opinions_command():
+    """Функция загрузки мнений в базу данных."""
+    with open('opinions.csv', encoding='utf-8') as f:
+        # Создаём итерируемый объект, который отображает каждую строку
+        # в качестве словаря с ключами из шапки файла:
+        reader = csv.DictReader(f)
+        # Для подсчёта строк добавляем счётчик:
+        counter = 0
+        for row in reader:
+            # Распакованный словарь используем
+            # для создания экземпляра модели Opinion:
+            opinion = Opinion(**row)
+            # Добавляем объект в сессию и коммитим:
+            db.session.add(opinion)
+            db.session.commit()
+            counter += 1
+    click.echo(f'Загружено мнений: {counter}')
 
 if __name__ == '__main__':
     app.run()
